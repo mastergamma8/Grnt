@@ -182,16 +182,25 @@ async def process_transfer_screenshot(message: types.Message, state: FSMContext)
         return
     deals[seller_deal_id]["seller_screenshot"] = message.photo[-1].file_id
     await message.answer("📸 Скриншот передачи товара получен!", parse_mode="HTML")
+    
     # Формируем инлайн-клавиатуру для подтверждения сделки администратором
     keyboard = InlineKeyboardMarkup(inline_keyboard=[
         [InlineKeyboardButton(text="✅ Подтвердить сделку", callback_data=f"confirm_{seller_deal_id}")],
         [InlineKeyboardButton(text="❌ Вернуть деньги покупателю", callback_data=f"refund_{seller_deal_id}")]
     ])
-    await bot.send_message(ADMIN_ID,
-        f"📢 <b>Сделка #{seller_deal_id}</b> ожидает подтверждения.\n\n"
-        "Проверьте скриншоты оплаты и передачи товара.",
+    
+    # Отправляем скриншот продавца админу вместе с клавиатурой
+    await bot.send_photo(
+        ADMIN_ID,
+        message.photo[-1].file_id,
+        caption=(
+            f"📩 <b>Сделка #{seller_deal_id}</b> ожидает подтверждения.\n\n"
+            "✅ Продавец отправил скриншот передачи товара.\n\n"
+            "Проверьте скриншоты оплаты и передачи товара."
+        ),
         reply_markup=keyboard,
-        parse_mode="HTML")
+        parse_mode="HTML"
+    )
     await state.clear()
 
 # ===== Обработчики для администратора =====
