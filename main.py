@@ -18,19 +18,6 @@ bot = Bot(token=API_TOKEN)
 dp = Dispatcher()
 
 # Глобальный словарь для хранения данных по сделкам
-# Структура:
-# deals = {
-#    "deal_id": {
-#         "buyer_id": ...,
-#         "seller_id": ...,
-#         "amount": ...,
-#         "currency": ...,
-#         "product": ...,
-#         "buyer_screenshot": ...,
-#         "seller_screenshot": ...
-#     },
-#     ...
-# }
 deals = {}
 
 # ===== Определяем состояния =====
@@ -45,7 +32,10 @@ class Form(StatesGroup):
 # ===== Обработчик команды /start =====
 @dp.message(CommandStart())
 async def start_handler(message: types.Message, state: FSMContext):
-    args = message.get_args()  # Получаем аргументы (например, "deal_1234")
+    # Получаем аргументы команды вручную (в aiogram 3.9.0 get_args() удалён)
+    parts = message.text.split(maxsplit=1)
+    args = parts[1] if len(parts) > 1 else ""
+    
     if args and args.startswith("deal_"):
         try:
             deal_id = args.split("_")[1]
