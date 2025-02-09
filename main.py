@@ -82,7 +82,7 @@ async def start_handler(message: types.Message, state: FSMContext):
         await message.answer(
             "🎉 <b>Добро пожаловать в TTH GRT</b> – надежный P2P-гарант!\n\n"
             "💼 <b>Покупайте и продавайте всё, что угодно – безопасно!</b>\n"
-            "От Telegram-подарков и NFT до токенов и фиата – сделки проходят легко и без риска.\n\n"
+            "От Telegram-подарков и NFT до Telegram-каналов и игр – сделки проходят легко и без риска.\n\n"
             "Выберите нужный раздел ниже:",
             reply_markup=keyboard,
             parse_mode="HTML"
@@ -159,11 +159,11 @@ async def process_product(message: types.Message, state: FSMContext):
     if currency.lower() == "rub":
         instructions = f"💳 Отправьте {amount} RUB на карту <b>{RECEIVER_CARD}</b>."
     elif currency.lower() == "crypto":
-        instructions = (f"💳 Отправьте {amount} криптовалюты на кошелек:\n"
+        instructions = (f"💳 Отправьте {amount} USDT на кошелек:\n"
                         f"<b>TON:</b> {CRYPTO_WALLET_TON}\n"
                         f"<b>USDT TRC20:</b> {CRYPTO_WALLET_USDT}")
     elif currency.lower() == "cryptobot":
-        instructions = f"💳 Отправьте {amount} криптовалюты через <a href=\"{CRYPTOBOT_LINK}\">CryptoBot</a>."
+        instructions = f"💳 Отправьте {amount} USDT через <a href=\"{CRYPTOBOT_LINK}\">CryptoBot</a>."
     else:
         instructions = ""
     
