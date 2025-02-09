@@ -50,17 +50,17 @@ async def start_handler(message: types.Message, state: FSMContext):
         try:
             deal_id = args.split("_")[1]
         except IndexError:
-            await message.answer("⚠️ Неверный формат ссылки.")
+            await message.answer("⚠️ Неверный формат ссылки.", parse_mode="HTML")
             return
         if deal_id not in deals:
-            await message.answer("⚠️ Сделка не найдена или уже завершена.")
+            await message.answer("⚠️ Сделка не найдена или уже завершена.", parse_mode="HTML")
             return
         # Регистрируем продавца в сделке
         deals[deal_id]["seller_id"] = message.from_user.id
         await message.answer(
-            f"🔹 *Вы зашли в сделку #{deal_id}*\n\n"
+            f"🔹 <b>Вы зашли в сделку #{deal_id}</b>\n\n"
             "📸 Отправьте скриншот, подтверждающий передачу товара.",
-            parse_mode="Markdown"
+            parse_mode="HTML"
         )
         await state.set_state(Form.waiting_for_transfer_screenshot)
     else:
@@ -70,28 +70,28 @@ async def start_handler(message: types.Message, state: FSMContext):
             [InlineKeyboardButton(text="💳 Добавить карту", callback_data="add_card")]
         ])
         await message.answer(
-            "🎉 *Добро пожаловать в TTH GRT* – надежный P2P-гарант!\n\n"
-            "💼 *Покупайте и продавайте всё, что угодно – безопасно!*\n"
+            "🎉 <b>Добро пожаловать в TTH GRT</b> – надежный P2P-гарант!\n\n"
+            "💼 <b>Покупайте и продавайте всё, что угодно – безопасно!</b>\n"
             "От Telegram-подарков и NFT до токенов и фиата – сделки проходят легко и без риска.\n\n"
             "Выберите нужный раздел ниже:",
             reply_markup=keyboard,
-            parse_mode="Markdown"
+            parse_mode="HTML"
         )
 
 # ===== Функция "Добавить карту" =====
 @dp.callback_query(F.data == "add_card")
 async def add_card(callback: types.CallbackQuery, state: FSMContext):
-    await callback.message.answer("Введите номер вашей карты (16 цифр):")
+    await callback.message.answer("Введите номер вашей карты (16 цифр):", parse_mode="HTML")
     await state.set_state(Form.waiting_for_card_number)
     await callback.answer()
 
 @dp.message(Form.waiting_for_card_number)
 async def process_card_number(message: types.Message, state: FSMContext):
     if not re.match(r"^\d{16}$", message.text):
-        await message.reply("❌ Введите корректный номер карты (16 цифр).")
+        await message.reply("❌ Введите корректный номер карты (16 цифр).", parse_mode="HTML")
         return
     # Здесь можно сохранить карту пользователя (например, в базу или словарь)
-    await message.answer("✅ Ваша карта сохранена!")
+    await message.answer("✅ Ваша карта сохранена!", parse_mode="HTML")
     await state.clear()
 
 # ===== Создание сделки (инициатор – покупатель) =====
@@ -102,7 +102,7 @@ async def create_deal(callback: types.CallbackQuery, state: FSMContext):
         [InlineKeyboardButton(text="💴 RUB", callback_data="currency_rub")],
         [InlineKeyboardButton(text="💎 Crypto", callback_data="currency_crypto")]
     ])
-    await bot.send_message(callback.from_user.id, "Выберите валюту для сделки:", reply_markup=keyboard)
+    await bot.send_message(callback.from_user.id, "Выберите валюту для сделки:", reply_markup=keyboard, parse_mode="HTML")
     await state.set_state(Form.waiting_for_currency)
     await callback.answer()
 
@@ -115,9 +115,9 @@ async def process_currency(callback: types.CallbackQuery, state: FSMContext):
     deal_link = f"https://t.me/{BOT_USERNAME}?start=deal_{deal_id}"
     await state.update_data(currency=currency, deal_id=deal_id, deal_link=deal_link)
     await bot.send_message(callback.from_user.id,
-        f"🔹 *Сделка #{deal_id}*\n\n"
+        f"🔹 <b>Сделка #{deal_id}</b>\n\n"
         f"Вы выбрали валюту: {currency}.\nВведите сумму сделки.",
-        parse_mode="Markdown")
+        parse_mode="HTML")
     await state.set_state(Form.waiting_for_amount)
     await callback.answer()
 
@@ -128,10 +128,10 @@ async def process_amount(message: types.Message, state: FSMContext):
         if amount <= 0:
             raise ValueError
         await state.update_data(amount=amount)
-        await message.answer("📦 Введите товар для сделки:")
+        await message.answer("📦 Введите товар для сделки:", parse_mode="HTML")
         await state.set_state(Form.waiting_for_product)
     except ValueError:
-        await message.reply("❌ Введите корректную сумму сделки.")
+        await message.reply("❌ Введите корректную сумму сделки.", parse_mode="HTML")
 
 @dp.message(Form.waiting_for_product)
 async def process_product(message: types.Message, state: FSMContext):
@@ -156,13 +156,13 @@ async def process_product(message: types.Message, state: FSMContext):
     await state.update_data(product=product)
     
     await message.answer(
-        f"✅ *Сделка #{deal_id} создана!*\n\n"
-        f"📌 *Товар:* {product}\n"
-        f"💰 *Сумма:* {amount} {currency}\n\n"
-        f"💳 Отправьте {amount} {currency} на карту *{RECEIVER_CARD}*.\n\n"
-        f"🔗 Передайте продавцу эту ссылку для участия в сделке: [Войти в сделку]({deal_link})\n\n"
+        f"✅ <b>Сделка #{deal_id} создана!</b>\n\n"
+        f"📌 <b>Товар:</b> {product}\n"
+        f"💰 <b>Сумма:</b> {amount} {currency}\n\n"
+        f"💳 Отправьте {amount} {currency} на карту <b>{RECEIVER_CARD}</b>.\n\n"
+        f"🔗 Передайте продавцу эту ссылку для участия в сделке: <a href=\"{deal_link}\">Войти в сделку</a>\n\n"
         "📸 После оплаты отправьте скриншот оплаты.",
-        parse_mode="Markdown"
+        parse_mode="HTML"
     )
     await state.set_state(Form.waiting_for_payment_screenshot)
 
@@ -172,11 +172,11 @@ async def process_payment_screenshot(message: types.Message, state: FSMContext):
     deal_id = data["deal_id"]
     # Сохраняем скрин покупателя в сделке
     deals[deal_id]["buyer_screenshot"] = message.photo[-1].file_id
-    await message.answer("📸 Скриншот оплаты получен! Ожидаем, когда продавец отправит скриншот передачи товара.")
+    await message.answer("📸 Скриншот оплаты получен! Ожидаем, когда продавец отправит скриншот передачи товара.", parse_mode="HTML")
     # Пересылаем скрин админу
     await bot.send_photo(ADMIN_ID, message.photo[-1].file_id,
-        caption=f"📩 *Сделка #{deal_id}*\n\n✅ Покупатель отправил скриншот оплаты.",
-        parse_mode="Markdown")
+        caption=f"📩 <b>Сделка #{deal_id}</b>\n\n✅ Покупатель отправил скриншот оплаты.",
+        parse_mode="HTML")
     await state.clear()
 
 @dp.message(Form.waiting_for_transfer_screenshot, F.photo)
@@ -188,20 +188,20 @@ async def process_transfer_screenshot(message: types.Message, state: FSMContext)
             seller_deal_id = d_id
             break
     if seller_deal_id is None:
-        await message.answer("⚠️ Сделка не найдена или уже обработана.")
+        await message.answer("⚠️ Сделка не найдена или уже обработана.", parse_mode="HTML")
         return
     deals[seller_deal_id]["seller_screenshot"] = message.photo[-1].file_id
-    await message.answer("📸 Скриншот передачи товара получен!")
+    await message.answer("📸 Скриншот передачи товара получен!", parse_mode="HTML")
     # Формируем инлайн-клавиатуру для подтверждения сделки администратором
     keyboard = InlineKeyboardMarkup(inline_keyboard=[
         [InlineKeyboardButton(text="✅ Подтвердить сделку", callback_data=f"confirm_{seller_deal_id}")],
         [InlineKeyboardButton(text="❌ Вернуть деньги покупателю", callback_data=f"refund_{seller_deal_id}")]
     ])
     await bot.send_message(ADMIN_ID,
-        f"📢 *Сделка #{seller_deal_id}* ожидает подтверждения.\n\n"
+        f"📢 <b>Сделка #{seller_deal_id}</b> ожидает подтверждения.\n\n"
         "Проверьте скриншоты оплаты и передачи товара.",
         reply_markup=keyboard,
-        parse_mode="Markdown")
+        parse_mode="HTML")
     await state.clear()
 
 # ===== Обработчики для администратора =====
@@ -210,14 +210,14 @@ async def admin_confirm(callback: types.CallbackQuery):
     deal_id = callback.data.split("_")[1]
     deal = deals.get(deal_id)
     if not deal:
-        await callback.message.answer("⚠️ Сделка не найдена.")
+        await callback.message.answer("⚠️ Сделка не найдена.", parse_mode="HTML")
         return
     buyer_id = deal.get("buyer_id")
     seller_id = deal.get("seller_id")
-    await bot.send_message(buyer_id, f"✅ Сделка #{deal_id} подтверждена администратором. Деньги переведены продавцу.")
+    await bot.send_message(buyer_id, f"✅ Сделка #{deal_id} подтверждена администратором. Деньги переведены продавцу.", parse_mode="HTML")
     if seller_id:
-        await bot.send_message(seller_id, f"✅ Сделка #{deal_id} подтверждена администратором. Деньги отправлены вам.")
-    await callback.message.answer(f"✅ Сделка #{deal_id} подтверждена.")
+        await bot.send_message(seller_id, f"✅ Сделка #{deal_id} подтверждена администратором. Деньги отправлены вам.", parse_mode="HTML")
+    await callback.message.answer(f"✅ Сделка #{deal_id} подтверждена.", parse_mode="HTML")
     del deals[deal_id]
 
 @dp.callback_query(F.data.startswith("refund_"))
@@ -225,14 +225,14 @@ async def admin_refund(callback: types.CallbackQuery):
     deal_id = callback.data.split("_")[1]
     deal = deals.get(deal_id)
     if not deal:
-        await callback.message.answer("⚠️ Сделка не найдена.")
+        await callback.message.answer("⚠️ Сделка не найдена.", parse_mode="HTML")
         return
     buyer_id = deal.get("buyer_id")
     seller_id = deal.get("seller_id")
-    await bot.send_message(buyer_id, f"❌ Сделка #{deal_id} отменена администратором. Деньги возвращены вам.")
+    await bot.send_message(buyer_id, f"❌ Сделка #{deal_id} отменена администратором. Деньги возвращены вам.", parse_mode="HTML")
     if seller_id:
-        await bot.send_message(seller_id, f"❌ Сделка #{deal_id} отменена администратором.")
-    await callback.message.answer(f"❌ Сделка #{deal_id} отменена. Деньги возвращены покупателю.")
+        await bot.send_message(seller_id, f"❌ Сделка #{deal_id} отменена администратором.", parse_mode="HTML")
+    await callback.message.answer(f"❌ Сделка #{deal_id} отменена. Деньги возвращены покупателю.", parse_mode="HTML")
     del deals[deal_id]
 
 # ===== Запуск бота =====
