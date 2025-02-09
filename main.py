@@ -86,6 +86,7 @@ async def start_handler(message: types.Message, state: FSMContext):
     "📖 <b>Как пользоваться?</b>\n"
     "Ознакомьтесь с инструкцией — <a href=\"https://telegra.ph/Kak-polzovatsya-botom-TTH-GRT--P2P-garant-02-09\">здесь</a>.\n\n"
     "Выберите нужный раздел ниже:",
+    reply_markup=keyboard,
     parse_mode="HTML",
     disable_web_page_preview=True  # Убирает предпросмотр ссылки
 )
