@@ -18,7 +18,7 @@ bot = Bot(token=API_TOKEN)
 dp = Dispatcher()
 
 # Глобальный словарь для хранения данных по сделкам
-# Структура: 
+# Структура:
 # deals = {
 #    "deal_id": {
 #         "buyer_id": ...,
@@ -44,19 +44,39 @@ class Form(StatesGroup):
 
 # ===== Обработчик команды /start =====
 @dp.message(CommandStart())
-async def send_welcome(message: types.Message):
-    keyboard = InlineKeyboardMarkup(inline_keyboard=[
-        [InlineKeyboardButton(text="💰 Создать сделку", callback_data="create_deal")],
-        [InlineKeyboardButton(text="💳 Добавить карту", callback_data="add_card")]
-    ])
-    await message.answer(
-        "🎉 *Добро пожаловать в TTH GRT* – надежный P2P-гарант!\n\n"
-        "💼 *Покупайте и продавайте всё, что угодно – безопасно!*\n"
-        "От Telegram-подарков и NFT до токенов и фиата – сделки проходят легко и без риска.\n\n"
-        "Выберите нужный раздел ниже:",
-        reply_markup=keyboard,
-        parse_mode="Markdown"
-    )
+async def start_handler(message: types.Message, state: FSMContext):
+    args = message.get_args()  # Получаем аргументы (например, "deal_1234")
+    if args and args.startswith("deal_"):
+        try:
+            deal_id = args.split("_")[1]
+        except IndexError:
+            await message.answer("⚠️ Неверный формат ссылки.")
+            return
+        if deal_id not in deals:
+            await message.answer("⚠️ Сделка не найдена или уже завершена.")
+            return
+        # Регистрируем продавца в сделке
+        deals[deal_id]["seller_id"] = message.from_user.id
+        await message.answer(
+            f"🔹 *Вы зашли в сделку #{deal_id}*\n\n"
+            "📸 Отправьте скриншот, подтверждающий передачу товара.",
+            parse_mode="Markdown"
+        )
+        await state.set_state(Form.waiting_for_transfer_screenshot)
+    else:
+        # Если аргументов нет – стандартное приветствие
+        keyboard = InlineKeyboardMarkup(inline_keyboard=[
+            [InlineKeyboardButton(text="💰 Создать сделку", callback_data="create_deal")],
+            [InlineKeyboardButton(text="💳 Добавить карту", callback_data="add_card")]
+        ])
+        await message.answer(
+            "🎉 *Добро пожаловать в TTH GRT* – надежный P2P-гарант!\n\n"
+            "💼 *Покупайте и продавайте всё, что угодно – безопасно!*\n"
+            "От Telegram-подарков и NFT до токенов и фиата – сделки проходят легко и без риска.\n\n"
+            "Выберите нужный раздел ниже:",
+            reply_markup=keyboard,
+            parse_mode="Markdown"
+        )
 
 # ===== Функция "Добавить карту" =====
 @dp.callback_query(F.data == "add_card")
@@ -121,7 +141,7 @@ async def process_product(message: types.Message, state: FSMContext):
     product = message.text
     amount = data["amount"]
     currency = data["currency"]
-
+    
     # Сохраняем данные сделки в глобальном словаре
     deals[deal_id] = {
         "buyer_id": message.from_user.id,
@@ -132,9 +152,9 @@ async def process_product(message: types.Message, state: FSMContext):
         "buyer_screenshot": None,
         "seller_screenshot": None
     }
-
+    
     await state.update_data(product=product)
-
+    
     await message.answer(
         f"✅ *Сделка #{deal_id} создана!*\n\n"
         f"📌 *Товар:* {product}\n"
@@ -158,28 +178,6 @@ async def process_payment_screenshot(message: types.Message, state: FSMContext):
         caption=f"📩 *Сделка #{deal_id}*\n\n✅ Покупатель отправил скриншот оплаты.",
         parse_mode="Markdown")
     await state.clear()
-
-# ===== Продавец присоединяется к сделке по ссылке =====
-# При заходе по ссылке вида: /start deal_<deal_id>
-@dp.message(Command("start"), F.args.startswith("deal_"))
-async def join_deal(message: types.Message, state: FSMContext):
-    # Получаем аргументы команды
-    args = message.get_args()  # например, "deal_1234"
-    try:
-        deal_id = args.split("_")[1]
-    except IndexError:
-        await message.answer("⚠️ Неверный формат ссылки.")
-        return
-    if deal_id not in deals:
-        await message.answer("⚠️ Сделка не найдена или уже завершена.")
-        return
-    # Обновляем информацию о сделке – регистрируем продавца
-    deals[deal_id]["seller_id"] = message.from_user.id
-    await message.answer(
-        f"🔹 *Вы зашли в сделку #{deal_id}*\n\n"
-        "📸 Отправьте скриншот, подтверждающий передачу товара.",
-        parse_mode="Markdown")
-    await state.set_state(Form.waiting_for_transfer_screenshot)
 
 @dp.message(Form.waiting_for_transfer_screenshot, F.photo)
 async def process_transfer_screenshot(message: types.Message, state: FSMContext):
