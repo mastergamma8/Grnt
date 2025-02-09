@@ -52,6 +52,9 @@ async def start_handler(message: types.Message, state: FSMContext):
             "📸 Отправьте скриншот, подтверждающий передачу товара.",
             parse_mode="HTML"
         )
+        # Уведомляем покупателя о том, что продавец присоединился к сделке
+        buyer_id = deals[deal_id]["buyer_id"]
+        await bot.send_message(buyer_id, f"🔔 Продавец присоединился к сделке #{deal_id}.", parse_mode="HTML")
         await state.set_state(Form.waiting_for_transfer_screenshot)
     else:
         # Если аргументов нет – стандартное приветствие
@@ -145,6 +148,11 @@ async def process_product(message: types.Message, state: FSMContext):
     
     await state.update_data(product=product)
     
+    # Формируем клавиатуру с кнопкой отмены сделки
+    cancel_keyboard = InlineKeyboardMarkup(inline_keyboard=[
+        [InlineKeyboardButton(text="❌ Отменить сделку", callback_data=f"cancel_{deal_id}")]
+    ])
+    
     await message.answer(
         f"✅ <b>Сделка #{deal_id} создана!</b>\n\n"
         f"📌 <b>Товар:</b> {product}\n"
@@ -152,6 +160,7 @@ async def process_product(message: types.Message, state: FSMContext):
         f"💳 Отправьте {amount} {currency} на карту <b>{RECEIVER_CARD}</b>.\n\n"
         f"🔗 Передайте продавцу эту ссылку для участия в сделке: <a href=\"{deal_link}\">Войти в сделку</a>\n\n"
         "📸 После оплаты отправьте скриншот оплаты.",
+        reply_markup=cancel_keyboard,
         parse_mode="HTML"
     )
     await state.set_state(Form.waiting_for_payment_screenshot)
@@ -160,13 +169,16 @@ async def process_product(message: types.Message, state: FSMContext):
 async def process_payment_screenshot(message: types.Message, state: FSMContext):
     data = await state.get_data()
     deal_id = data["deal_id"]
-    # Сохраняем скрин покупателя в сделке
+    # Сохраняем скриншот покупателя в сделке
     deals[deal_id]["buyer_screenshot"] = message.photo[-1].file_id
     await message.answer("📸 Скриншот оплаты получен! Ожидаем, когда продавец отправит скриншот передачи товара.", parse_mode="HTML")
-    # Пересылаем скрин админу
-    await bot.send_photo(ADMIN_ID, message.photo[-1].file_id,
+    # Пересылаем скриншот админу
+    await bot.send_photo(
+        ADMIN_ID,
+        message.photo[-1].file_id,
         caption=f"📩 <b>Сделка #{deal_id}</b>\n\n✅ Покупатель отправил скриншот оплаты.",
-        parse_mode="HTML")
+        parse_mode="HTML"
+    )
     await state.clear()
 
 @dp.message(Form.waiting_for_transfer_screenshot, F.photo)
@@ -202,6 +214,28 @@ async def process_transfer_screenshot(message: types.Message, state: FSMContext)
         parse_mode="HTML"
     )
     await state.clear()
+
+# ===== Обработчик отмены сделки (инициатор – покупатель) =====
+@dp.callback_query(F.data.startswith("cancel_"))
+async def cancel_deal(callback: types.CallbackQuery):
+    deal_id = callback.data.split("_")[1]
+    deal = deals.get(deal_id)
+    if not deal:
+        await callback.message.answer("⚠️ Сделка не найдена или уже завершена.", parse_mode="HTML")
+        return
+    # Проверяем, что отмену совершает именно покупатель
+    if callback.from_user.id != deal.get("buyer_id"):
+        await callback.answer("Вы не можете отменить эту сделку.", show_alert=True)
+        return
+    # Сообщаем админу об отмене сделки
+    await bot.send_message(ADMIN_ID, f"❌ Сделка #{deal_id} отменена покупателем (ID: {callback.from_user.id}).", parse_mode="HTML")
+    await callback.message.answer(f"❌ Сделка #{deal_id} отменена.", parse_mode="HTML")
+    # Если продавец уже присоединился, уведомляем его об отмене
+    seller_id = deal.get("seller_id")
+    if seller_id:
+        await bot.send_message(seller_id, f"❌ Сделка #{deal_id} отменена покупателем.", parse_mode="HTML")
+    del deals[deal_id]
+    await callback.answer()
 
 # ===== Обработчики для администратора =====
 @dp.callback_query(F.data.startswith("confirm_"))
