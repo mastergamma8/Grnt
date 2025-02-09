@@ -8,10 +8,10 @@ from aiogram.fsm.state import State, StatesGroup
 from aiogram.fsm.context import FSMContext
 
 # ===== Настройки =====
-API_TOKEN = '7562283466:AAGTEcY5jWfaNilIWVKETuFnp8MgFplVANg'
+API_TOKEN = '8030481560:AAE15GipYIF6UeJlzFkggED8kWxG5spi2zY'
 ADMIN_ID = 7880438865  # ID администратора
 RECEIVER_CARD = "2204120118196936"  # Реквизиты, на которые переводятся средства
-BOT_USERNAME = "tthcripto_bot"  # Без символа @
+BOT_USERNAME = "TTHGRTbot"  # Без символа @
 
 # ===== Инициализация =====
 bot = Bot(token=API_TOKEN)
