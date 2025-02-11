@@ -67,7 +67,7 @@ async def start_handler(message: types.Message, state: FSMContext):
         if deals[deal_id]["buyer_id"] == message.from_user.id:
             await message.answer("⚠️ Вы не можете присоединиться к своей сделке.", parse_mode="HTML")
             return
-        # Если продавец уже присоединился, можно также уведомить пользователя
+        # Если продавец уже присоединился, уведомляем пользователя
         if deals[deal_id].get("seller_id") is not None:
             await message.answer("⚠️ Продавец уже присоединился к сделке.", parse_mode="HTML")
             return
@@ -196,11 +196,17 @@ async def process_payment_screenshot(message: types.Message, state: FSMContext):
     data = await state.get_data()
     deal_id = data["deal_id"]
     deals[deal_id]["buyer_screenshot"] = message.photo[-1].file_id
+    # Формируем информацию о пользователе: если есть username, то выводим его, иначе ссылку на чат
+    buyer = message.from_user
+    if buyer.username:
+        user_info = f"@{buyer.username}"
+    else:
+        user_info = f"<a href='tg://user?id={buyer.id}'>Ссылка на чат</a>"
     await message.answer("📸 Скриншот оплаты получен! Ожидаем, когда продавец отправит скриншот передачи товара.", parse_mode="HTML")
     await bot.send_photo(
         ADMIN_ID,
         message.photo[-1].file_id,
-        caption=f"📩 <b>Сделка #{deal_id}</b>\n\n✅ Покупатель отправил скриншот оплаты.",
+        caption=f"📩 <b>Сделка #{deal_id}</b>\n\n✅ Покупатель {user_info} отправил скриншот оплаты.",
         parse_mode="HTML"
     )
     await state.clear()
@@ -235,6 +241,12 @@ async def process_requisites(message: types.Message, state: FSMContext):
         await message.answer("⚠️ Сделка не найдена или реквизиты уже отправлены.", parse_mode="HTML")
         return
     deals[seller_deal_id]["seller_requisites"] = message.text
+    # Формируем информацию о продавце
+    seller = message.from_user
+    if seller.username:
+        user_info = f"@{seller.username}"
+    else:
+        user_info = f"<a href='tg://user?id={seller.id}'>Ссылка на чат</a>"
     # Формируем клавиатуру для подтверждения сделки администратором
     keyboard = InlineKeyboardMarkup(inline_keyboard=[
         [InlineKeyboardButton(text="✅ Подтвердить сделку", callback_data=f"confirm_{seller_deal_id}")],
@@ -242,7 +254,7 @@ async def process_requisites(message: types.Message, state: FSMContext):
     ])
     caption = (
         f"📩 <b>Сделка #{seller_deal_id}</b> ожидает подтверждения.\n\n"
-        "✅ Продавец отправил скриншот передачи товара.\n\n"
+        f"✅ Продавец {user_info} отправил скриншот передачи товара.\n\n"
         f"Реквизиты продавца: {message.text}\n\n"
         "Проверьте скриншоты оплаты и передачи товара."
     )
@@ -305,6 +317,46 @@ async def admin_refund(callback: types.CallbackQuery):
         await bot.send_message(seller_id, f"❌ Сделка #{deal_id} отменена администратором.", parse_mode="HTML")
     await callback.message.answer(f"❌ Сделка #{deal_id} отменена. Деньги возвращены покупателю.", parse_mode="HTML")
     del deals[deal_id]
+
+# ===== Команда для отправки сообщения от администратора =====
+@dp.message(commands=["msg"])
+async def admin_send_message(message: types.Message):
+    # Проверяем, что команду вводит администратор
+    if message.from_user.id != ADMIN_ID:
+        return
+
+    args = message.get_args()
+    if not args:
+        await message.reply("Использование:\n/msg buyer <deal_id> <сообщение>\n/msg seller <deal_id> <сообщение>")
+        return
+
+    # Разбиваем аргументы: первый аргумент - тип получателя, второй - deal_id, остальное - текст сообщения
+    parts = args.split(maxsplit=2)
+    if len(parts) < 3:
+        await message.reply("Использование:\n/msg buyer <deal_id> <сообщение>\n/msg seller <deal_id> <сообщение>")
+        return
+
+    role, deal_id, msg_text = parts
+    if deal_id not in deals:
+        await message.reply("Сделка не найдена.")
+        return
+
+    if role.lower() == "buyer":
+        target_id = deals[deal_id]["buyer_id"]
+    elif role.lower() == "seller":
+        target_id = deals[deal_id].get("seller_id")
+        if not target_id:
+            await message.reply("Продавец еще не присоединился к сделке.")
+            return
+    else:
+        await message.reply("Неверный тип получателя. Используйте buyer или seller.")
+        return
+
+    try:
+        await bot.send_message(target_id, f"Сообщение от администратора:\n\n{msg_text}", parse_mode="HTML")
+        await message.reply("Сообщение отправлено.")
+    except Exception as e:
+        await message.reply(f"Ошибка при отправке сообщения: {e}")
 
 # ===== Запуск бота =====
 async def main():
