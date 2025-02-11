@@ -163,8 +163,8 @@ async def process_product(message: types.Message, state: FSMContext):
         instructions = f"💳 Отправьте {amount} RUB на карту <b>{RECEIVER_CARD}</b>."
     elif currency.lower() == "crypto":
         instructions = (f"💳 Отправьте {amount} USDT на кошелек:\n"
-                        f"<b>TON:</b> {CRYPTO_WALLET_TON}\n"
-                        f"<b>USDT TRC20:</b> {CRYPTO_WALLET_USDT}")
+                        f"<code>TON: {CRYPTO_WALLET_TON}</code>\n"
+                        f"<code>USDT TRC20: {CRYPTO_WALLET_USDT}</code>")
     elif currency.lower() == "cryptobot":
         instructions = f"💳 Отправьте {amount} USDT через <a href=\"{CRYPTOBOT_LINK}\">CryptoBot</a>."
     else:
