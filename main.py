@@ -324,22 +324,20 @@ async def admin_send_message(message: types.Message):
     if message.from_user.id != ADMIN_ID:
         return
 
-    # Для отладки: подтверждаем получение команды
-    await message.reply("Команда /msg получена!")
-
-    args = message.get_args()
+    # Получаем аргументы команды вручную:
+    parts = message.text.split(maxsplit=1)
+    args = parts[1] if len(parts) > 1 else ""
+    
     if not args:
         await message.reply("Использование:\n/msg buyer <deal_id> <сообщение>\n/msg seller <deal_id> <сообщение>")
         return
 
-    # Разбиваем аргументы: первый аргумент - тип получателя, второй - deal_id, остальное - текст сообщения
-    parts = args.split(maxsplit=2)
-    if len(parts) < 3:
+    split_args = args.split(maxsplit=2)
+    if len(split_args) < 3:
         await message.reply("Использование:\n/msg buyer <deal_id> <сообщение>\n/msg seller <deal_id> <сообщение>")
         return
 
-    role, deal_id, msg_text = parts
-    if deal_id not in deals:
+    role, deal_id, msg_text = split_args
         await message.reply("Сделка не найдена.")
         return
 
