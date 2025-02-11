@@ -321,9 +321,11 @@ async def admin_refund(callback: types.CallbackQuery):
 # ===== Команда для отправки сообщения от администратора =====
 @dp.message(Command("msg"))
 async def admin_send_message(message: types.Message):
-    # Проверяем, что команду вводит администратор
     if message.from_user.id != ADMIN_ID:
         return
+
+    # Для отладки: подтверждаем получение команды
+    await message.reply("Команда /msg получена!")
 
     args = message.get_args()
     if not args:
