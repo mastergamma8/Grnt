@@ -324,18 +324,20 @@ async def admin_send_message(message: types.Message):
     if message.from_user.id != ADMIN_ID:
         return
 
-    # Получаем аргументы команды вручную:
-    command_args = message.text.split(maxsplit=1)[1] if len(message.text.split()) > 1 else ""    
-    if not args:
+    # Получаем аргументы команды
+    command_args = message.text.split(maxsplit=1)[1] if len(message.text.split()) > 1 else ""
+    if not command_args:
         await message.reply("Использование:\n/msg buyer <deal_id> <сообщение>\n/msg seller <deal_id> <сообщение>")
         return
 
-    split_args = args.split(maxsplit=2)
+    split_args = command_args.split(maxsplit=2)
     if len(split_args) < 3:
         await message.reply("Использование:\n/msg buyer <deal_id> <сообщение>\n/msg seller <deal_id> <сообщение>")
         return
 
-        role, deal_id, msg_text = split_args
+    role, deal_id, msg_text = split_args
+
+    if deal_id not in deals:
         await message.reply("Сделка не найдена.")
         return
 
@@ -355,7 +357,7 @@ async def admin_send_message(message: types.Message):
         await message.reply("Сообщение отправлено.")
     except Exception as e:
         await message.reply(f"Ошибка при отправке сообщения: {e}")
-
+        
 # ===== Запуск бота =====
 async def main():
     await dp.start_polling(bot)
