@@ -319,7 +319,7 @@ async def admin_refund(callback: types.CallbackQuery):
     del deals[deal_id]
 
 # ===== Команда для отправки сообщения от администратора =====
-@dp.message(commands=["msg"])
+@dp.message(Command("msg"))
 async def admin_send_message(message: types.Message):
     # Проверяем, что команду вводит администратор
     if message.from_user.id != ADMIN_ID:
