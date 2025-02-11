@@ -335,7 +335,7 @@ async def admin_send_message(message: types.Message):
         await message.reply("Использование:\n/msg buyer <deal_id> <сообщение>\n/msg seller <deal_id> <сообщение>")
         return
 
-    role, deal_id, msg_text = split_args
+        role, deal_id, msg_text = split_args
         await message.reply("Сделка не найдена.")
         return
 
