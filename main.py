@@ -325,9 +325,7 @@ async def admin_send_message(message: types.Message):
         return
 
     # Получаем аргументы команды вручную:
-    parts = message.text.split(maxsplit=1)
-    args = parts[1] if len(parts) > 1 else ""
-    
+    command_args = message.text.split(maxsplit=1)[1] if len(message.text.split()) > 1 else ""    
     if not args:
         await message.reply("Использование:\n/msg buyer <deal_id> <сообщение>\n/msg seller <deal_id> <сообщение>")
         return
